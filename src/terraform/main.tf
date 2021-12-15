@@ -41,6 +41,16 @@ module network2 {
   }
 }
 
+module network3 {
+  source = "../modules/network"
+  resource_group_name = azurerm_resource_group.rg.name
+  vnet_name = var.vnet3_name
+  vnet_address = var.vnet3_address
+  vnet_location = azurerm_resource_group.rg.location
+  subnet_address = var.subnet3_address
+  subnet_enforce_private_link_endpoint_network_policies = false
+}
+
 resource "azurerm_virtual_network_peering" "vnet1_to_vnet2" {
   name                      = "${var.vnet_name}-to-${var.vnet2_name}"
   resource_group_name       = azurerm_resource_group.rg.name
@@ -53,45 +63,6 @@ resource "azurerm_virtual_network_peering" "vnet2_to_vnet1" {
   resource_group_name       = azurerm_resource_group.rg.name
   virtual_network_name      = module.network2.vnet_name
   remote_virtual_network_id = module.network1.vnet_id
-}
-
-resource "azurerm_network_interface" "simple_vm" {
-  name = var.simple_vm_name
-  location = var.location
-  resource_group_name = azurerm_resource_group.rg.name
-  enable_ip_forwarding = true
-  ip_configuration {
-    name = var.simple_vm_name
-    subnet_id = module.network2.subnet_id
-    private_ip_address_allocation = "Static"
-    private_ip_address = cidrhost(var.subnet2_address, 10)
-  }
-}
-
-resource "azurerm_linux_virtual_machine" "simple_vm" {
-  name = var.simple_vm_name
-  admin_username = var.openvpnserver_vm_user
-  location = var.location
-  resource_group_name = azurerm_resource_group.rg.name
-  network_interface_ids = [azurerm_network_interface.simple_vm.id]
-  size = var.simple_vm_size
-  source_image_reference {
-    publisher = "canonical"
-    offer     = "0001-com-ubuntu-server-focal"
-    sku       = "20_04-lts"
-    version   = "latest"
-  }
-  os_disk {
-    caching = "None"
-    storage_account_type = "Standard_LRS"
-  }
-  admin_ssh_key {
-    username   = var.openvpnserver_vm_user
-    public_key = file(var.openvpnserver_vm_user_ssh_path)
-  }
-  identity {
-    type = "SystemAssigned"
-  }
 }
 
 module "openvpn" {
@@ -110,4 +81,19 @@ module "openvpn" {
   openvpn_port = var.openvpn_port
   openvpn_protocol = var.openvpn_protocol
   openvpn_routes = [module.network1.vnet_route, module.network2.vnet_route]
+}
+
+resource "null_resource" "generate_vpnclient" {
+  provisioner "local-exec" {
+    command = "/bin/bash ./scripts/generate-vpnclient.sh"
+    environment = {
+      OPENVPN_SERVER     = module.openvpn.openvpn_public_ip
+      OPENVPN_USER = var.openvpnserver_vm_user
+      CLIENT_NAME = var.openvpn_client_name
+      SSH_KEY = var.openvpnserver_vm_user_ssh_private_key_path
+    }
+  }
+  depends_on = [ 
+    module.openvpn
+  ]
 }

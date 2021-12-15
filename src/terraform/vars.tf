@@ -1,3 +1,10 @@
+locals {
+  nginx_conf = templatefile("${path.module}/templates/nginx_conf.tpl", {
+    API_ADDRESS = azurerm_network_interface.vm_api.private_ip_address
+    API_PORT = 3000
+  })
+}
+
 data "azurerm_client_config" "current" {}
 
 variable "project_name" { 
@@ -30,6 +37,18 @@ variable "vnet2_address" {
 
 variable "subnet2_address" {
   default = "30.30.0.0/24"
+}
+
+variable "vnet3_name" {
+  default = "proxy-net"
+}
+
+variable "vnet3_address" {
+  default = "40.40.0.0/16"
+}
+
+variable "subnet3_address" {
+  default = "40.40.0.0/24"
 }
 
 variable "openvpnserver_vm_user" {
@@ -87,10 +106,22 @@ variable "storage_account_replication_type" {
   default = "LRS"
 }
 
-variable "simple_vm_name" {
-  default = "simple-vm"
+variable "openvpn_client_name" {
+  default = "demo"
 }
 
-variable "simple_vm_size" {
+variable "vm_api_name" {
+  default = "simple-api"
+}
+
+variable "vm_api_size" {
+  default = "Standard_B2s"
+}
+
+variable "proxy_vm_name" {
+  default = "proxy-vm"
+}
+
+variable "proxy_vm_size" {
   default = "Standard_B2s"
 }

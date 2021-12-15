@@ -9,3 +9,11 @@ output "storage_account_endpoind" {
 output "vnet_route" {
   value = [module.network1.vnet_route, module.network2.vnet_route]
 }
+
+output "proxy_vm_public_ip" {
+  value = azurerm_public_ip.proxy_vm.ip_address
+}
+
+output "api_vm_private_ip" {
+  value = azurerm_network_interface.vm_api.private_ip_address
+}

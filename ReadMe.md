@@ -1,4 +1,4 @@
-# OpenVPN - POC
+# OpenVPN with Reverse Proxy Endpoint Connection- POC
 
 This project intends to build a VPN using OpenVPN, it is desired to build de following network topology:
 
